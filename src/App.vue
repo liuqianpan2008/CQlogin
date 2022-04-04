@@ -1,26 +1,54 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <h1>扫码登录</h1>
+  <qrcode-vue :value="dataQC"
+              :size="300"
+              level="H" />
+  <br>
+  {{restext.date.cod?"已登录Id为:"+restext.date.data:restext.msg}}
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
 
+import QrcodeVue from 'qrcode.vue'
+import axios from 'axios'
+import { ref } from '@vue/reactivity'
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    QrcodeVue
+  },
+  setup () {
+    const dataQC = ref()
+    const restext = ref({
+      "flag": true,
+      "date": { "cod": false, "data": "1" },
+      "msg": ""
+    })
+    var myVar
+    axios.get("http://127.0.0.1:8080/users/logincod").then(res => {
+      dataQC.value = res.data.date;
+      myVar = setInterval(function () { myTimer() }, 3000);
+    })
+    function myTimer () {
+      console.log("发送心跳包");
+      axios.post("http://127.0.0.1:8080/users/verificationCod", {
+        cod: dataQC.value
+      }).then(res => {
+        console.log(res.data);
+        restext.value = res.data
+        if (restext.value.date.cod == true) {
+          clearInterval(myVar);
+        }
+      })
+
+
+    }
+    return {
+      dataQC, restext
+    }
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 </style>
